@@ -1,0 +1,109 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@theme {
+  --color-bg: #f3efe6;
+  --color-bg-warm: #ebe4d6;
+  --color-surface: #faf7f1;
+  --color-card: #fffcf7;
+  --color-ink: #142033;
+  --color-fg: #1a2434;
+  --color-muted: #5d6673;
+  --color-subtle: #8a9088;
+  --color-border: #d8d1c3;
+  --color-border-strong: #c4bbaa;
+  --color-accent: #1f6b55;
+  --color-accent-fg: #f6f3eb;
+  --color-accent-soft: #d7e8e0;
+  --color-navy: #16324f;
+  --color-navy-fg: #f4f1ea;
+  --color-danger: #9b3a32;
+  --color-danger-soft: #f3ddd9;
+  --color-warn: #8a5a1b;
+  --color-warn-soft: #f3e6cc;
+  --color-ok: #1f6b55;
+  --color-ok-soft: #d7e8e0;
+  --color-info: #2a5278;
+  --color-info-soft: #d5e2ee;
+  --color-lab: #2a5278;
+  --color-ready: #1a7a86;
+  --color-notified: #b45a2a;
+  --color-delivered: #1f6b55;
+  --color-billed: #8a7a5a;
+  --color-canceled: #9b3a32;
+  --color-paid: #8a6b18;
+  --color-doc-1: #2a5278;
+  --color-doc-2: #1f6b55;
+  --color-doc-3: #8a5a1b;
+  --color-doc-4: #5a4d7a;
+  --color-doc-5: #3d5a4c;
+  --font-display: "Instrument Serif", "Times New Roman", serif;
+  --font-sans: "Outfit", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-2xl: 32px;
+  --shadow-border:
+    0 0 0 1px rgb(20 32 51 / 0.06),
+    0 1px 2px -1px rgb(20 32 51 / 0.06),
+    0 8px 24px -12px rgb(20 32 51 / 0.1);
+  --shadow-lift:
+    0 0 0 1px rgb(20 32 51 / 0.08),
+    0 12px 32px -16px rgb(20 32 51 / 0.18);
+}
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  html,
+  body,
+  #app {
+    min-height: 100%;
+  }
+
+  body {
+    background: var(--color-bg);
+    color: var(--color-fg);
+    font-family: var(--font-sans);
+    line-height: 1.5;
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+    font-family: var(--font-display);
+    letter-spacing: -0.03em;
+    line-height: 1.15;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  ::selection {
+    background: var(--color-accent-soft);
+    color: var(--color-ink);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
