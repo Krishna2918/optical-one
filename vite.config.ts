@@ -128,6 +128,51 @@ function authPopupPlugin(): Plugin {
 // opens a second dev-server port, which breaks the single-port preview.
 // The dev server starts once `src/router.tsx` and `src/routes/` exist — see
 // AGENTS.md § "First scaffold".
+
+/** Copy PGLite wasm/data next to the bundled server chunk for Vercel. */
+function copyPgliteServerAssetsPlugin(): Plugin {
+  return {
+    name: "copy-pglite-server-assets",
+    apply: "build",
+    async closeBundle() {
+      const { cpSync, existsSync, readdirSync } = await import("node:fs");
+      const { dirname, join } = await import("node:path");
+      const { createRequire } = await import("node:module");
+      const req = createRequire(join(process.cwd(), "package.json"));
+      const dist = dirname(req.resolve("@electric-sql/pglite"));
+      const files = ["pglite.data", "pglite.wasm", "initdb.wasm"];
+      const functionsRoot = join(process.cwd(), ".vercel/output/functions");
+      if (!existsSync(functionsRoot)) {
+        console.warn("[pglite-assets] closeBundle: no .vercel/output/functions yet");
+        return;
+      }
+
+      const libsDirs: string[] = [];
+      const walk = (dir: string) => {
+        for (const ent of readdirSync(dir, { withFileTypes: true })) {
+          const p = join(dir, ent.name);
+          if (!ent.isDirectory()) continue;
+          if (ent.name === "_libs") libsDirs.push(p);
+          else walk(p);
+        }
+      };
+      walk(functionsRoot);
+
+      let copied = 0;
+      for (const destDir of libsDirs) {
+        for (const name of files) {
+          const src = join(dist, name);
+          if (!existsSync(src)) continue;
+          cpSync(src, join(destDir, name));
+          copied += 1;
+        }
+      }
+      console.log(
+        `[pglite-assets] closeBundle copied ${copied} files into ${libsDirs.length} _libs dir(s)`,
+      );
+    },
+  };
+}
 export default defineConfig(({ command }) => ({
   server: {
     host: "0.0.0.0",
@@ -145,6 +190,10 @@ export default defineConfig(({ command }) => ({
     tanstackStart(),
     ...(command === "build"
       ? [
+          // Runs closeBundle *after* nitro (plugin order is reversed for that
+          // hook) so PGLite's wasm/data land next to the bundled server module.
+          // Without this, Vercel looks for `/var/task/_libs/pglite.data` and 500s.
+          copyPgliteServerAssetsPlugin(),
           nitro({
             preset: "vercel",
             // Auto-registers server/middleware/* (the PWA install page +
