@@ -45,7 +45,7 @@ export function DemoLaunch({
         disabled={!!busy}
         onClick={() => void go("staff")}
       >
-        {busy === "staff" ? "Opening demo…" : "Enter demo"}
+        {busy === "staff" ? "Starting the clinic…" : "Enter demo"}
         <ArrowRight className="size-4" />
       </Button>
       <Button
@@ -55,13 +55,17 @@ export function DemoLaunch({
         disabled={!!busy}
         onClick={() => void go("patient")}
       >
-        {busy === "patient" ? "Opening…" : "Enter as patient"}
+        {busy === "patient" ? "Starting…" : "Enter as patient"}
       </Button>
-      <p className="font-mono text-xs text-subtle">
-        {DEMO_STAFF.email} · {DEMO_STAFF.password}
-        <span className="mx-2 text-border-strong">·</span>
-        {DEMO_PATIENT.email} · {DEMO_PATIENT.password}
-      </p>
+      {busy ? (
+        <p className="text-xs text-muted">First open on a new link takes a few seconds.</p>
+      ) : (
+        <p className="font-mono text-xs text-subtle">
+          {DEMO_STAFF.email} · {DEMO_STAFF.password}
+          <span className="mx-2 text-border-strong">·</span>
+          {DEMO_PATIENT.email} · {DEMO_PATIENT.password}
+        </p>
+      )}
     </div>
   );
 }
@@ -75,7 +79,7 @@ export function HeaderDemoButton() {
       disabled={!!busy}
       onClick={() => void go("staff")}
     >
-      {busy === "staff" ? "Opening…" : "Enter demo"}
+      {busy === "staff" ? "Starting…" : "Enter demo"}
     </Button>
   );
 }

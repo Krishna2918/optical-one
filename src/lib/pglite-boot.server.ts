@@ -6,14 +6,13 @@
  * behind — Vercel then 500s with ENOENT `/var/task/_libs/pglite.data`.
  *
  * Passing `fsBundle` / `pgliteWasmModule` / `initdbWasmModule` skips those
- * disk reads. Bytes come from node_modules (dev) or the inlined virtual
- * module (the production server bundle).
+ * disk reads. Bytes come from node_modules / function files (fast) or, only
+ * if those are missing, the inlined virtual module (slow — 7MB of JS).
  */
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
-import { loadPgliteArtifactBytes } from "virtual:pglite-artifacts";
 
 export type PgliteBootOptions = {
   fsBundle: Blob;
@@ -70,25 +69,28 @@ async function bytesFromDisk(): Promise<ArtifactBytes | null> {
   return null;
 }
 
-function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
-  const copy = new Uint8Array(bytes.byteLength);
-  copy.set(bytes);
-  return copy.buffer;
+async function bytesFromInline(): Promise<ArtifactBytes | null> {
+  try {
+    const mod = await import("virtual:pglite-artifacts");
+    return mod.loadPgliteArtifactBytes();
+  } catch (err) {
+    console.error("[pglite-boot] inline artifacts failed:", err);
+    return null;
+  }
 }
 
 export async function loadPgliteBootOptions(): Promise<PgliteBootOptions | Record<string, never>> {
-  const bytes = (await bytesFromDisk()) ?? loadPgliteArtifactBytes();
+  const bytes = (await bytesFromDisk()) ?? (await bytesFromInline());
   if (!bytes?.data || !bytes.wasm || !bytes.initdb) {
     console.error("[pglite-boot] no wasm/data artifacts found on disk or in bundle");
     return {};
   }
-  const data = toArrayBuffer(bytes.data);
   const [pgliteWasmModule, initdbWasmModule] = await Promise.all([
-    WebAssembly.compile(toArrayBuffer(bytes.wasm)),
-    WebAssembly.compile(toArrayBuffer(bytes.initdb)),
+    WebAssembly.compile(bytes.wasm as unknown as BufferSource),
+    WebAssembly.compile(bytes.initdb as unknown as BufferSource),
   ]);
   return {
-    fsBundle: new Blob([data]),
+    fsBundle: new Blob([bytes.data as unknown as BlobPart]),
     pgliteWasmModule,
     initdbWasmModule,
   };
