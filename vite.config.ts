@@ -147,19 +147,20 @@ function copyPgliteServerAssetsPlugin(): Plugin {
         return;
       }
 
-      const libsDirs: string[] = [];
+      const destDirs: string[] = [];
       const walk = (dir: string) => {
         for (const ent of readdirSync(dir, { withFileTypes: true })) {
           const p = join(dir, ent.name);
           if (!ent.isDirectory()) continue;
-          if (ent.name === "_libs") libsDirs.push(p);
-          else walk(p);
+          if (ent.name.endsWith(".func")) destDirs.push(p);
+          if (ent.name === "_libs" || ent.name === "_chunks") destDirs.push(p);
+          walk(p);
         }
       };
       walk(functionsRoot);
 
       let copied = 0;
-      for (const destDir of libsDirs) {
+      for (const destDir of destDirs) {
         for (const name of files) {
           const src = join(dist, name);
           if (!existsSync(src)) continue;
@@ -168,11 +169,78 @@ function copyPgliteServerAssetsPlugin(): Plugin {
         }
       }
       console.log(
-        `[pglite-assets] closeBundle copied ${copied} files into ${libsDirs.length} _libs dir(s)`,
+        `[pglite-assets] closeBundle copied ${copied} files into ${destDirs.length} dir(s)`,
       );
     },
   };
 }
+
+/**
+ * Inline PGLite's wasm/data into the *server* bundle as gzipped base64.
+ * Passing those bytes to `new PGlite({ fsBundle, pgliteWasmModule, ... })`
+ * skips the package's `fs.readFile("./pglite.data")` which 500s on Vercel.
+ */
+function pgliteInlineArtifactsPlugin(): Plugin {
+  const VIRTUAL = "virtual:pglite-artifacts";
+  const RESOLVED = "\0" + VIRTUAL;
+  return {
+    name: "pglite-inline-artifacts",
+    resolveId(id) {
+      if (id === VIRTUAL) return RESOLVED;
+      return undefined;
+    },
+    async load(id) {
+      if (id !== RESOLVED) return undefined;
+      // Client environments never boot PGLite — keep the module tiny.
+      const consumer =
+        "environment" in this && this.environment
+          ? (this.environment as { config?: { consumer?: string } }).config?.consumer
+          : undefined;
+      if (consumer === "client") {
+        return `export function loadPgliteArtifactBytes() {
+  throw new Error("virtual:pglite-artifacts is server-only");
+}`;
+      }
+
+      const { readFileSync } = await import("node:fs");
+      const { dirname, join } = await import("node:path");
+      const { createRequire } = await import("node:module");
+      const req = createRequire(join(process.cwd(), "package.json"));
+      const dist = dirname(req.resolve("@electric-sql/pglite"));
+
+      // Dev: read live files. Don't inflate HMR with 7MB of base64.
+      if (this.meta.watchMode) {
+        return `import { readFileSync } from "node:fs";
+import { join } from "node:path";
+const dist = ${JSON.stringify(dist)};
+export function loadPgliteArtifactBytes() {
+  return {
+    data: readFileSync(join(dist, "pglite.data")),
+    wasm: readFileSync(join(dist, "pglite.wasm")),
+    initdb: readFileSync(join(dist, "initdb.wasm")),
+  };
+}
+`;
+      }
+
+      const { gzipSync } = await import("node:zlib");
+      const encode = (name: string) =>
+        gzipSync(readFileSync(join(dist, name))).toString("base64");
+      const data = encode("pglite.data");
+      const wasm = encode("pglite.wasm");
+      const initdb = encode("initdb.wasm");
+      return `import { gunzipSync } from "node:zlib";
+const data = gunzipSync(Buffer.from("${data}", "base64"));
+const wasm = gunzipSync(Buffer.from("${wasm}", "base64"));
+const initdb = gunzipSync(Buffer.from("${initdb}", "base64"));
+export function loadPgliteArtifactBytes() {
+  return { data, wasm, initdb };
+}
+`;
+    },
+  };
+}
+
 export default defineConfig(({ command }) => ({
   server: {
     host: "0.0.0.0",
@@ -180,8 +248,12 @@ export default defineConfig(({ command }) => ({
     strictPort: true,
   },
   resolve: { tsconfigPaths: true },
+  optimizeDeps: {
+    exclude: ["@electric-sql/pglite"],
+  },
   plugins: [
     pgliteBootstrapPlugin(),
+    pgliteInlineArtifactsPlugin(),
     // Before tanstackStart so /auth/popup never falls through to the SPA.
     authPopupPlugin(),
     // PWA head + ?install=1 tutorial page; runs before Start/Nitro.
