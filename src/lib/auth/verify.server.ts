@@ -67,7 +67,7 @@ export async function getSessionUser(
 ): Promise<VerifiedUser | null> {
   const kind = demoKindFromRequest();
   if (kind) {
-    const { userIdForDemoKind } = await import("@/lib/server/demo");
+    const { userIdForDemoKind } = await import("@/lib/server/demo-cast");
     const { demoAccount } = await import("@/lib/demo");
     const id = await userIdForDemoKind(kind);
     return { id, email: demoAccount(kind).email };
@@ -99,7 +99,7 @@ export async function getSessionUser(
 export async function requireUserId(bearerToken?: string): Promise<string> {
   const kind = demoKindFromRequest();
   if (kind) {
-    const { userIdForDemoKind } = await import("@/lib/server/demo");
+    const { userIdForDemoKind } = await import("@/lib/server/demo-cast");
     return userIdForDemoKind(kind);
   }
   if (!authConfigured) {
