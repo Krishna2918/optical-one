@@ -1,14 +1,12 @@
 import { useState } from "react";
-import { useNavigate } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { DEMO_PATIENT, DEMO_STAFF } from "@/lib/demo";
-import { enterDemo, type DemoKind } from "@/lib/enter-demo";
+import { DEMO_ACCOUNTS, DEMO_PASSWORD, type DemoKind } from "@/lib/demo";
+import { enterDemo } from "@/lib/enter-demo";
 import { cn } from "@/lib/utils";
 
 export function useDemoEntry() {
-  const navigate = useNavigate();
   const [busy, setBusy] = useState<DemoKind | null>(null);
 
   async function go(kind: DemoKind) {
@@ -16,11 +14,9 @@ export function useDemoEntry() {
     setBusy(kind);
     try {
       const to = await enterDemo(kind);
-      toast.success(kind === "staff" ? "Welcome to the floor" : "Welcome, Ciara");
-      await navigate({ to });
+      window.location.assign(to);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not open demo");
-    } finally {
       setBusy(null);
     }
   }
@@ -30,56 +26,73 @@ export function useDemoEntry() {
 
 export function DemoLaunch({
   className,
-  size = "lg",
+  onPick,
+  columns = 2,
 }: {
   className?: string;
-  size?: "sm" | "default" | "lg";
+  onPick?: (email: string, password: string) => void;
+  columns?: 1 | 2;
 }) {
   const { busy, go } = useDemoEntry();
 
   return (
-    <div className={cn("flex flex-col gap-2", className)}>
-      <Button
-        type="button"
-        size={size}
-        disabled={!!busy}
-        onClick={() => void go("staff")}
-      >
-        {busy === "staff" ? "Starting the clinic…" : "Enter demo"}
-        <ArrowRight className="size-4" />
-      </Button>
-      <Button
-        type="button"
-        size={size}
-        variant="outline"
-        disabled={!!busy}
-        onClick={() => void go("patient")}
-      >
-        {busy === "patient" ? "Starting…" : "Enter as patient"}
-      </Button>
+    <div className={cn("space-y-4", className)}>
+      <div className="flex flex-wrap items-end justify-between gap-2">
+        <div>
+          <p className="text-xs font-medium uppercase tracking-[0.16em] text-accent">Sample logins</p>
+          <p className="mt-1 text-sm text-muted">Tap Open on any door. Same password on all four.</p>
+        </div>
+        <p className="rounded-full bg-bg-warm px-3 py-1 font-mono text-xs text-ink">{DEMO_PASSWORD}</p>
+      </div>
+      <ul className={cn("grid gap-3", columns > 1 && "sm:grid-cols-2")}>
+        {DEMO_ACCOUNTS.map((account) => {
+          const running = busy === account.kind;
+          return (
+            <li key={account.kind}>
+              <div className="flex h-full items-center gap-3 rounded-2xl bg-card p-4 shadow-border">
+                <div className="min-w-0 flex-1">
+                  <p className="text-[11px] font-medium uppercase tracking-wider text-subtle">
+                    {account.roleLabel}
+                  </p>
+                  <p className="truncate text-sm font-medium text-ink">{account.name}</p>
+                  <p className="truncate font-mono text-[11px] text-muted">{account.email}</p>
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  data-testid={`demo-open-${account.kind}`}
+                  aria-label={`Open ${account.roleLabel} demo`}
+                  disabled={!!busy}
+                  onClick={() => {
+                    onPick?.(account.email, account.password);
+                    void go(account.kind);
+                  }}
+                >
+                  {running ? "Starting…" : "Open"}
+                  {running ? null : <ArrowRight className="size-3.5" />}
+                </Button>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
       {busy ? (
         <p className="text-xs text-muted">First open on a new link takes a few seconds.</p>
-      ) : (
-        <p className="font-mono text-xs text-subtle">
-          {DEMO_STAFF.email} · {DEMO_STAFF.password}
-          <span className="mx-2 text-border-strong">·</span>
-          {DEMO_PATIENT.email} · {DEMO_PATIENT.password}
-        </p>
-      )}
+      ) : null}
     </div>
   );
 }
 
-export function HeaderDemoButton() {
+export function HeaderDemoButton({
+  size = "sm",
+}: {
+  size?: "sm" | "default" | "lg";
+}) {
   const { busy, go } = useDemoEntry();
   return (
-    <Button
-      type="button"
-      size="sm"
-      disabled={!!busy}
-      onClick={() => void go("staff")}
-    >
-      {busy === "staff" ? "Starting…" : "Enter demo"}
+    <Button type="button" size={size} disabled={!!busy} onClick={() => void go("owner")}>
+      {busy === "owner" ? "Starting…" : "Enter demo"}
+      {busy === "owner" ? null : <ArrowRight className="size-4" />}
     </Button>
   );
 }

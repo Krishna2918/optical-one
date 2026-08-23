@@ -19,7 +19,8 @@ import type {
 import { patientName } from "@/lib/types";
 import type { JourneyStage, OrderStatus, Role } from "@/lib/constants";
 import { clinicYmd, clockIso, shiftClinicDate } from "@/lib/slots";
-import { seedPractice } from "./seed";
+import { DEMO_STAFF } from "@/lib/demo";
+import { seedPractice, relabelDemoCast } from "./seed";
 
 export type Workspace = {
   profile: Profile;
@@ -100,6 +101,9 @@ export async function requireWorkspace(userId: string): Promise<Workspace> {
         )
       `;
       await seedPractice(sql, clinicId);
+    } else if (email === DEMO_STAFF.email) {
+      clinicId = existingClinic.id;
+      role = "owner";
     } else {
       clinicId = existingClinic.id;
       role = "staff";
@@ -139,6 +143,7 @@ export async function requireWorkspace(userId: string): Promise<Workspace> {
   const clinic = (
     await sql<Clinic>`select * from clinics where id = ${profile.clinic_id} limit 1`
   )[0];
+  await relabelDemoCast(sql, clinic.id);
   const doctors = await sql<Doctor>`
     select * from doctors
     where clinic_id = ${profile.clinic_id}

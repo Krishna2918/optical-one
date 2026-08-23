@@ -53,7 +53,9 @@ export const Route = createRootRoute({
           <Outlet />
           <Toaster
             theme="light"
-            position="bottom-right"
+            position="top-right"
+            offset={80}
+            visibleToasts={1}
             toastOptions={{
               className: "font-sans! shadow-border! bg-card! text-fg! border-0!",
             }}

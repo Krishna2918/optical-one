@@ -22,7 +22,7 @@ async function go(path) {
 
 await go("/signup");
 const email = `qa${Date.now()}@lumen.test`;
-await page.getByLabel("Your name").fill("Harjinder Gahir");
+await page.getByLabel("Your name").fill("Reed Halley");
 await page.getByLabel("Email").fill(email);
 await page.getByLabel("Password").fill("practice123");
 await page.getByRole("button", { name: "Create workspace" }).click();

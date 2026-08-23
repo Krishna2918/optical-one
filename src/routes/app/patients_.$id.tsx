@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { format } from "date-fns";
 import { visitLabel } from "@/lib/slots";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactElement, cloneElement } from "react";
 import { toast } from "sonner";
 import {
   addFamily,
@@ -385,9 +385,14 @@ function FamilyForm({
           Guarantor
         </label>
         <Button
-          size="sm"
           disabled={!related}
-          onClick={() => void onAdd(related, rel, g)}
+          onClick={() => {
+            if (!related) {
+              toast.error("Pick someone to link");
+              return;
+            }
+            void onAdd(related, rel, g);
+          }}
         >
           Link
         </Button>
@@ -431,16 +436,19 @@ function InsuranceForm({
       </Field>
       <div className="flex items-end">
         <Button
-          disabled={!carrier}
-          onClick={() =>
+          onClick={() => {
+            if (!carrier.trim()) {
+              toast.error("Carrier is required");
+              return;
+            }
             void onSave({
               carrier,
               plan_name: plan,
               member_id: member,
               group_no: group,
               copay: Number(copay) || 0,
-            })
-          }
+            });
+          }}
         >
           Add coverage
         </Button>
@@ -555,11 +563,12 @@ function NewOrder({
   );
 }
 
-function Field({ label, children }: { label: string; children: ReactNode }) {
+function Field({ label, children }: { label: string; children: ReactElement<{ id?: string }> }) {
+  const id = children.props.id ?? `field-${label.replace(/\s+/g, "-").toLowerCase()}`;
   return (
     <div className="space-y-1.5">
-      <Label>{label}</Label>
-      {children}
+      <Label htmlFor={id}>{label}</Label>
+      {cloneElement(children, { id })}
     </div>
   );
 }

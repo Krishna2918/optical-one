@@ -107,7 +107,7 @@ export function AppShell({
             </Link>
           </div>
         </header>
-        <div className="px-4 pb-24 pt-5 sm:px-6 lg:px-8 lg:pb-10">{children}</div>
+        <div className="px-4 pb-32 pt-5 sm:px-6 lg:px-8 lg:pb-10">{children}</div>
         <nav className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-5 border-t border-border bg-surface/95 px-1 py-1 backdrop-blur lg:hidden">
           {nav.slice(0, 5).map((item) => {
             const active = item.end

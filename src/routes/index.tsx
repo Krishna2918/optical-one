@@ -77,21 +77,22 @@ function Home() {
                   </Link>
                 </Button>
               ) : (
-                <div className="w-full max-w-sm">
-                  <DemoLaunch />
-                  <p className="mt-4 text-sm text-muted">
-                    Or{" "}
-                    <Link to="/signup" className="text-accent underline-offset-4 hover:underline">
-                      create a practice
-                    </Link>
-                    {" · "}
-                    <Link to="/login" className="text-accent underline-offset-4 hover:underline">
-                      sign in
-                    </Link>
-                  </p>
-                </div>
+                <>
+                  <HeaderDemoButton size="lg" />
+                  <Button size="lg" variant="outline" asChild>
+                    <Link to="/login">Sign in</Link>
+                  </Button>
+                </>
               )}
             </div>
+            {inApp ? null : (
+              <p className="mt-4 text-sm text-muted">
+                Or{" "}
+                <Link to="/signup" className="text-accent underline-offset-4 hover:underline">
+                  create a practice
+                </Link>
+              </p>
+            )}
           </div>
           <figure className="overflow-hidden rounded-2xl shadow-lift">
             <img
@@ -101,6 +102,14 @@ function Home() {
             />
           </figure>
         </section>
+
+        {inApp ? null : (
+          <section className="border-t border-border bg-surface">
+            <div className="mx-auto max-w-6xl px-5 py-12">
+              <DemoLaunch />
+            </div>
+          </section>
+        )}
 
         <section className="border-t border-border bg-bg-warm/60">
           <div className="mx-auto grid max-w-6xl gap-8 px-5 py-16 sm:grid-cols-2 lg:grid-cols-4">

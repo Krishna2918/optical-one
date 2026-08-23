@@ -32,6 +32,11 @@ function Signup() {
         name: name || email.split("@")[0] || "Owner",
       });
       if (error) throw new Error(error.message ?? "Could not create account");
+      try {
+        await authClient.getSession();
+      } catch {
+        /* session store recovers on next fetch */
+      }
       toast.success("Practice workspace is ready");
       await navigate({ to: "/app" });
     } catch (err) {

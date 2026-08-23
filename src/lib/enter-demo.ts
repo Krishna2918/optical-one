@@ -1,25 +1,29 @@
-import { authClient } from "@/lib/auth/client";
-import { DEMO_PATIENT, DEMO_STAFF } from "@/lib/demo";
+import { authClient, getBearerToken, rememberBearerToken, signInWithEmail } from "@/lib/auth/client";
+import { demoAccount, type DemoKind } from "@/lib/demo";
 import { ensureDemoAccounts } from "@/lib/server/demo";
 
-export type DemoKind = "staff" | "patient";
+export type { DemoKind };
 
 export function demoCreds(kind: DemoKind) {
-  return kind === "staff" ? DEMO_STAFF : DEMO_PATIENT;
+  return demoAccount(kind);
 }
 
 export function demoDest(kind: DemoKind) {
-  return kind === "staff" ? "/app" : "/care";
+  return demoAccount(kind).dest;
 }
 
 /** Seed demo users if needed, then sign in. Returns the portal path. */
 export async function enterDemo(kind: DemoKind) {
-  const creds = demoCreds(kind);
+  const creds = demoAccount(kind);
   await ensureDemoAccounts();
-  const { error } = await authClient.signIn.email({
-    email: creds.email,
-    password: creds.password,
-  });
-  if (error) throw new Error(error.message ?? "Could not open the demo");
-  return demoDest(kind);
+  if (getBearerToken()) {
+    try {
+      await authClient.signOut();
+    } catch {
+      /* switch account even if the prior session is already gone */
+    }
+    rememberBearerToken(null);
+  }
+  await signInWithEmail(creds.email, creds.password);
+  return creds.dest;
 }

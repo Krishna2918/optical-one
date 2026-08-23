@@ -1,13 +1,13 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect, type FormEvent } from "react";
-import { GROK_PROVIDERS, authClient, authEnabled, signIn } from "@/lib/auth/client";
+import { GROK_PROVIDERS, authEnabled, signIn, signInWithEmail } from "@/lib/auth/client";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import { Logo } from "@/components/logo";
 import { DemoLaunch } from "@/components/demo-launch";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { DEMO_PATIENT, DEMO_STAFF } from "@/lib/demo";
+import { DEMO_STAFF, destForEmail } from "@/lib/demo";
 import { ensureDemoAccounts } from "@/lib/server/demo";
 import { toast } from "sonner";
 
@@ -21,7 +21,7 @@ function Login() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (!isPending && user) void navigate({ to: "/app" });
+    if (!isPending && user) void navigate({ to: destForEmail(user.primaryEmail ?? "") });
   }, [isPending, user, navigate]);
 
   useEffect(() => {
@@ -33,12 +33,9 @@ function Login() {
     setBusy(true);
     try {
       await ensureDemoAccounts();
-      const { error } = await authClient.signIn.email({ email, password });
-      if (error) throw new Error(error.message ?? "Could not sign in");
+      await signInWithEmail(email, password);
       toast.success("Welcome back");
-      await navigate({
-        to: email.toLowerCase() === DEMO_PATIENT.email ? "/care" : "/app",
-      });
+      await navigate({ to: destForEmail(email) });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Sign in failed");
     } finally {
@@ -66,14 +63,21 @@ function Login() {
           </Link>
           <h1 className="font-display text-4xl text-ink">Sign in</h1>
           <p className="mt-2 text-sm text-muted">
-            Demo is filled in. Enter the floor, or walk in as a patient.
+            Four sample doors — owner, front desk, doctor, and the customer portal.
           </p>
 
-          <DemoLaunch className="mt-8" />
+          <DemoLaunch
+            className="mt-8"
+            columns={1}
+            onPick={(nextEmail, nextPassword) => {
+              setEmail(nextEmail);
+              setPassword(nextPassword);
+            }}
+          />
 
           <form onSubmit={onEmail} className="mt-8 space-y-3">
             <p className="text-xs font-medium uppercase tracking-[0.16em] text-subtle">
-              Or continue with these credentials
+              Or type a sample login
             </p>
             <div className="space-y-1.5">
               <Label htmlFor="email">Email</Label>

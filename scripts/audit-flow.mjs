@@ -48,15 +48,15 @@ try {
   }
   const floor = await text();
   ok("Floor shell", floor.includes("The floor") && floor.includes("Optical One"));
-  ok("Demo owner", floor.includes("Harjinder"));
-  ok("Coming up lists Ciara 2:00", floor.includes("Ciara Hart") && floor.includes("2:00"));
+  ok("Demo owner", floor.includes("Reed") || floor.includes("Halley"));
+  ok("Coming up lists Lila 2:00", floor.includes("Lila Voss") && floor.includes("2:00"));
   await shot("audit-02-floor");
 
   await go("/app/calendar");
   const dateVal = await page.locator('input[type="date"]').inputValue();
   const cal = await text();
   ok("Calendar +2 cluster date", Boolean(dateVal), dateVal);
-  ok("Ciara booked at 2:00", cal.includes("2:00") && cal.includes("Ciara"));
+  ok("Lila booked at 2:00", cal.includes("2:00") && cal.includes("Lila"));
   ok("Neighbor hours open", cal.includes("1:00 PM") && cal.includes("3:00 PM"));
   ok("Distant hours closed", cal.includes("Closed"));
   await shot("audit-03-calendar");
@@ -81,9 +81,9 @@ try {
   ok("Today button", /^\d{4}-\d{2}-\d{2}$/.test(await page.locator('input[type="date"]').inputValue()));
 
   await go("/app/patients");
-  ok("Patient list", (await text()).includes("Hart") && (await text()).includes("Brar"));
-  const hart = page.locator("a[href*='/app/patients/']").filter({ hasText: "Hart" }).first();
-  ok("Ciara chart link", (await hart.count()) > 0);
+  ok("Patient list", (await text()).includes("Voss") && (await text()).includes("Pell"));
+  const hart = page.locator("a[href*='/app/patients/']").filter({ hasText: "Voss" }).first();
+  ok("Lila chart link", (await hart.count()) > 0);
   await Promise.all([
     page.waitForURL((u) => /\/app\/patients\/[^/?]+/.test(u.pathname), { timeout: 15000 }),
     hart.click(),
@@ -92,7 +92,7 @@ try {
   const chart = await text();
   ok(
     "Chart page",
-    /\/app\/patients\/[^/]+/.test(new URL(page.url()).pathname) && chart.includes("Ciara"),
+    /\/app\/patients\/[^/]+/.test(new URL(page.url()).pathname) && chart.includes("Lila"),
     page.url(),
   );
   ok(
@@ -134,10 +134,10 @@ try {
   await shot("audit-08-inbox");
 
   await go("/app/admin");
-  ok("Admin people", (await text()).includes("Invite") && (await text()).includes("Harjinder"));
+  ok("Admin people", (await text()).includes("Invite") && (await text()).includes("Reed"));
   await page.getByRole("button", { name: "doctors" }).click();
   await page.waitForTimeout(300);
-  ok("Admin doctors", (await text()).includes("Amrik"));
+  ok("Admin doctors", (await text()).includes("Quinn"));
   await shot("audit-09-admin");
 
   await go("/app/onboard");

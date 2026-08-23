@@ -20,6 +20,13 @@ export const authClient = createAuthClient({
       if (token) ctx.headers.set("Authorization", `Bearer ${token}`);
       return ctx;
     },
+    onSuccess(ctx) {
+      // Bearer plugin exposes the session on `set-auth-token`. Email/password
+      // in the live-preview iframe cannot keep `__Host-` cookies, so we stash
+      // it the same way OAuth popup sign-in does.
+      const header = ctx.response?.headers?.get("set-auth-token");
+      if (header) setBearerToken(header);
+    },
   },
 });
 
@@ -57,6 +64,31 @@ function setBearerToken(token: string | null): void {
     else window.sessionStorage.removeItem(BEARER_KEY);
   } catch {
     /* storage unavailable — ignore */
+  }
+}
+
+/** Keep a session token for the live-preview iframe (cookies are partitioned). */
+export function rememberBearerToken(token: string | null | undefined) {
+  setBearerToken(token ?? null);
+}
+
+function tokenFromSignInData(data: unknown): string | null {
+  if (!data || typeof data !== "object") return null;
+  const row = data as { token?: unknown; session?: { token?: unknown } };
+  if (typeof row.token === "string" && row.token) return row.token;
+  if (typeof row.session?.token === "string" && row.session.token) return row.session.token;
+  return null;
+}
+
+/** Email/password sign-in that also works inside the live-preview iframe. */
+export async function signInWithEmail(email: string, password: string) {
+  const { data, error } = await authClient.signIn.email({ email, password });
+  if (error) throw new Error(error.message ?? "Could not sign in");
+  rememberBearerToken(tokenFromSignInData(data));
+  try {
+    await authClient.getSession();
+  } catch {
+    /* session store recovers on the next useSession fetch */
   }
 }
 
