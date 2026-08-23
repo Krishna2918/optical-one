@@ -1,10 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { ArrowRight, CalendarClock, Mail, Route as RouteIcon, Users } from "lucide-react";
+import { CalendarClock, Mail, Route as RouteIcon, Users } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { DemoLaunch, HeaderDemoButton } from "@/components/demo-launch";
 import { Button } from "@/components/ui/button";
-import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import { warmDemo } from "@/lib/server/demo";
 
 export const Route = createFileRoute("/")({ component: Home });
@@ -33,9 +32,6 @@ const pillars = [
 ];
 
 function Home() {
-  const { user, isPending } = useCurrentUserState();
-  const inApp = !isPending && user;
-
   useEffect(() => {
     const timer = window.setTimeout(() => {
       void warmDemo().catch(() => undefined);
@@ -48,18 +44,10 @@ function Home() {
       <header className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5">
         <Logo />
         <nav className="flex items-center gap-2">
-          {inApp ? (
-            <Button asChild size="sm">
-              <Link to="/app">Open practice</Link>
-            </Button>
-          ) : (
-            <>
-              <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex">
-                <Link to="/login">Sign in</Link>
-              </Button>
-              <HeaderDemoButton />
-            </>
-          )}
+          <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex">
+            <Link to="/login">Sign in</Link>
+          </Button>
+          <HeaderDemoButton />
         </nav>
       </header>
 
@@ -78,30 +66,17 @@ function Home() {
               portals for the floor, the owner, and the family.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              {inApp ? (
-                <Button size="lg" asChild>
-                  <Link to="/app">
-                    Continue to the floor
-                    <ArrowRight className="size-4" />
-                  </Link>
-                </Button>
-              ) : (
-                <>
-                  <HeaderDemoButton size="lg" />
-                  <Button size="lg" variant="outline" asChild>
-                    <Link to="/login">Sign in</Link>
-                  </Button>
-                </>
-              )}
+              <HeaderDemoButton size="lg" />
+              <Button size="lg" variant="outline" asChild>
+                <Link to="/login">Sign in</Link>
+              </Button>
             </div>
-            {inApp ? null : (
-              <p className="mt-4 text-sm text-muted">
-                Or{" "}
-                <Link to="/signup" className="text-accent underline-offset-4 hover:underline">
-                  create a practice
-                </Link>
-              </p>
-            )}
+            <p className="mt-4 text-sm text-muted">
+              Or{" "}
+              <Link to="/signup" className="text-accent underline-offset-4 hover:underline">
+                create a practice
+              </Link>
+            </p>
           </div>
           <figure className="overflow-hidden rounded-2xl shadow-lift">
             <img
@@ -113,13 +88,11 @@ function Home() {
           </figure>
         </section>
 
-        {inApp ? null : (
-          <section className="border-t border-border bg-surface">
-            <div className="mx-auto max-w-6xl px-5 py-12">
-              <DemoLaunch />
-            </div>
-          </section>
-        )}
+        <section className="border-t border-border bg-surface">
+          <div className="mx-auto max-w-6xl px-5 py-12">
+            <DemoLaunch />
+          </div>
+        </section>
 
         <section className="border-t border-border bg-bg-warm/60">
           <div className="mx-auto grid max-w-6xl gap-8 px-5 py-16 sm:grid-cols-2 lg:grid-cols-4">

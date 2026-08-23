@@ -96,16 +96,18 @@ export function HeaderDemoButton({
   size?: "sm" | "default" | "lg";
 }) {
   const { busy, go } = useDemoEntry();
+  const label = "Continue to the floor";
   return (
     <Button
       type="button"
       size={size}
       data-testid="header-enter-demo"
+      aria-label="Continue to the floor"
       disabled={!!busy}
       onPointerEnter={warm}
       onClick={() => go("owner")}
     >
-      {busy === "owner" ? "Starting…" : "Enter demo"}
+      {busy === "owner" ? "Starting…" : label}
       {busy === "owner" ? null : <ArrowRight className="size-4" />}
     </Button>
   );
