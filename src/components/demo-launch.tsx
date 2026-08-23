@@ -4,7 +4,12 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { DEMO_ACCOUNTS, DEMO_PASSWORD, type DemoKind } from "@/lib/demo";
 import { enterDemo } from "@/lib/enter-demo";
+import { warmDemo } from "@/lib/server/demo";
 import { cn } from "@/lib/utils";
+
+function warm() {
+  void warmDemo().catch(() => undefined);
+}
 
 export function useDemoEntry() {
   const [busy, setBusy] = useState<DemoKind | null>(null);
@@ -64,6 +69,7 @@ export function DemoLaunch({
                   data-testid={`demo-open-${account.kind}`}
                   aria-label={`Open ${account.roleLabel} demo`}
                   disabled={!!busy}
+                  onPointerEnter={warm}
                   onClick={() => {
                     onPick?.(account.email, account.password);
                     go(account.kind);
@@ -78,7 +84,7 @@ export function DemoLaunch({
         })}
       </ul>
       {busy ? (
-        <p className="text-xs text-muted">First open on a new link takes a few seconds.</p>
+        <p className="text-xs text-muted">Opening the sample practice…</p>
       ) : null}
     </div>
   );
@@ -96,6 +102,7 @@ export function HeaderDemoButton({
       size={size}
       data-testid="header-enter-demo"
       disabled={!!busy}
+      onPointerEnter={warm}
       onClick={() => go("owner")}
     >
       {busy === "owner" ? "Starting…" : "Enter demo"}

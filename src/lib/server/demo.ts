@@ -7,6 +7,12 @@ export const ensureDemoAccounts = createServerFn({ method: "POST" }).handler(asy
   return seedDemoCast();
 });
 
+/** Boot the owner floor in the background so Enter demo does not wait on a cold start. */
+export const warmDemo = createServerFn({ method: "POST" }).handler(async () => {
+  const { warmOwnerFloor } = await import("./demo-cast");
+  return warmOwnerFloor();
+});
+
 /** Read the demo-role cookie from the incoming request (SSR-safe). */
 export const peekDemoKind = createServerFn({ method: "GET" }).handler(async () => {
   const { getCookie } = await import("@tanstack/react-start/server");

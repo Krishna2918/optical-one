@@ -1,9 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { ArrowRight, CalendarClock, Mail, Route as RouteIcon, Users } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { DemoLaunch, HeaderDemoButton } from "@/components/demo-launch";
 import { Button } from "@/components/ui/button";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
+import { warmDemo } from "@/lib/server/demo";
 
 export const Route = createFileRoute("/")({ component: Home });
 
@@ -33,6 +35,13 @@ const pillars = [
 function Home() {
   const { user, isPending } = useCurrentUserState();
   const inApp = !isPending && user;
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      void warmDemo().catch(() => undefined);
+    }, 250);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   return (
     <div className="min-h-svh bg-bg">
@@ -99,6 +108,7 @@ function Home() {
               src="/images/hero-boutique.jpg"
               alt="Quiet optical boutique with walnut millwork"
               className="aspect-4/3 w-full object-cover sm:aspect-16/10"
+              fetchPriority="high"
             />
           </figure>
         </section>
@@ -129,6 +139,7 @@ function Home() {
               src="/images/still-frames.jpg"
               alt="Frames beside an appointment book"
               className="aspect-4/3 w-full object-cover"
+              loading="lazy"
             />
           </figure>
           <div className="flex flex-col justify-center">

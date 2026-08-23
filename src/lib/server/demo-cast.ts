@@ -3,37 +3,36 @@ import { DEMO_ACCOUNTS, type DemoKind, demoAccount } from "@/lib/demo";
 import { requireWorkspace } from "./workspace";
 import { refreshDemoSchedule } from "./seed";
 
-async function ensureUser(email: string, password: string, name: string) {
+/** Insert a demo person directly — no Better Auth round-trip (too slow on cold Vercel). */
+async function ensureUser(kind: DemoKind) {
   const sql = await getSql();
+  const account = demoAccount(kind);
   const existing = (
-    await sql<{ id: string }>`select id from "user" where email = ${email} limit 1`
+    await sql<{ id: string }>`select id from "user" where email = ${account.email} limit 1`
   )[0];
   if (existing) return existing.id;
 
-  const { auth } = await import("@/lib/auth/server");
-  try {
-    const result = await auth.api.signUpEmail({
-      body: { email, password, name },
-    });
-    return result.user.id;
-  } catch {
-    const again = (
-      await sql<{ id: string }>`select id from "user" where email = ${email} limit 1`
-    )[0];
-    return again?.id ?? null;
-  }
+  const userId = `demo-${kind}`;
+  await sql`
+    insert into "user" (id, name, email, "emailVerified", "createdAt", "updatedAt")
+    values (${userId}, ${account.name}, ${account.email}, ${true}, now(), now())
+    on conflict (email) do nothing
+  `;
+  const row = (
+    await sql<{ id: string }>`select id from "user" where email = ${account.email} limit 1`
+  )[0];
+  if (!row) throw new Error("Demo user missing");
+  return row.id;
 }
 
 export async function seedDemoCast() {
   const sql = await getSql();
-  let clinicId: string | null = null;
+  const ownerId = await ensureUser("owner");
+  const ws = await requireWorkspace(ownerId);
+  const clinicId = ws.clinic.id;
 
   for (const account of DEMO_ACCOUNTS) {
-    const userId = await ensureUser(account.email, account.password, account.name);
-    if (!userId) continue;
-    const ws = await requireWorkspace(userId);
-    clinicId = ws.clinic.id;
-
+    const userId = await ensureUser(account.kind);
     if (account.kind === "owner") {
       await sql`
         update profiles
@@ -42,8 +41,8 @@ export async function seedDemoCast() {
       `;
       continue;
     }
-
     if (account.kind === "staff") {
+      await requireWorkspace(userId);
       await sql`
         update profiles
         set role = 'staff', display_name = ${account.name}, doctor_id = null, patient_id = null
@@ -51,12 +50,12 @@ export async function seedDemoCast() {
       `;
       continue;
     }
-
     if (account.kind === "doctor") {
+      await requireWorkspace(userId);
       const doc = (
         await sql<{ id: string }>`
           select id from doctors
-          where clinic_id = ${ws.clinic.id} and color = ${"doc-1"}
+          where clinic_id = ${clinicId} and color = ${"doc-1"}
           limit 1
         `
       )[0];
@@ -71,7 +70,7 @@ export async function seedDemoCast() {
       }
       continue;
     }
-
+    await requireWorkspace(userId);
     await sql`
       update profiles
       set role = 'patient', display_name = ${account.name}
@@ -79,21 +78,17 @@ export async function seedDemoCast() {
     `;
   }
 
-  if (clinicId) await refreshDemoSchedule(sql, clinicId);
+  await refreshDemoSchedule(sql, clinicId);
   return { ok: true as const };
 }
 
 export async function userIdForDemoKind(kind: DemoKind) {
-  const sql = await getSql();
-  const account = demoAccount(kind);
-  const existing = (
-    await sql<{ id: string }>`select id from "user" where email = ${account.email} limit 1`
-  )[0];
-  if (existing) return existing.id;
-  await seedDemoCast();
-  const row = (
-    await sql<{ id: string }>`select id from "user" where email = ${account.email} limit 1`
-  )[0];
-  if (!row) throw new Error("Demo user missing");
-  return row.id;
+  return ensureUser(kind);
+}
+
+/** Boot Postgres + owner clinic so Enter demo is already warm. */
+export async function warmOwnerFloor() {
+  const ownerId = await ensureUser("owner");
+  await requireWorkspace(ownerId);
+  return { ok: true as const };
 }
