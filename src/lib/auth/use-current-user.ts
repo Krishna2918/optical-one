@@ -1,4 +1,6 @@
+import { useEffect, useState } from "react";
 import { authClient, authEnabled } from "./client";
+import { demoUserFromKind, readDemoKindClient } from "@/lib/demo-session";
 
 /** Normalized user shape used across the app, auth on or off. */
 export type AppUser = {
@@ -58,6 +60,18 @@ export function useCurrentUserState(): CurrentUserState {
   if (!authEnabled) return { user: DEV_USER, isPending: false };
   // eslint-disable-next-line react-hooks/rules-of-hooks -- authEnabled is constant for the app's lifetime
   const { data, isPending } = authClient.useSession();
+  // Demo cookie is readable only in the browser. Stay pending through SSR so
+  // `/app` does not bounce a demo visitor to `/login` before hydrate.
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const [clientReady, setClientReady] = useState(false);
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  useEffect(() => {
+    setClientReady(true);
+  }, []);
+  const demoKind = clientReady ? readDemoKindClient() : null;
+  if (demoKind) {
+    return { user: demoUserFromKind(demoKind), isPending: false };
+  }
   const user = data?.user;
   return {
     user: user
@@ -69,7 +83,7 @@ export function useCurrentUserState(): CurrentUserState {
           isDevFallback: false,
         }
       : null,
-    isPending,
+    isPending: isPending || !clientReady,
   };
 }
 

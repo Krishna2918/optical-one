@@ -14,6 +14,7 @@ import { Route as AppRouteRouteImport } from './routes/app/route'
 import { Route as CareRouteRouteImport } from './routes/care/route'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as SignupRouteImport } from './routes/signup'
+import { Route as ApiDemoRouteImport } from './routes/api/demo'
 import { Route as AppIndexRouteImport } from './routes/app/index'
 import { Route as AppAdminRouteImport } from './routes/app/admin'
 import { Route as AppCalendarRouteImport } from './routes/app/calendar'
@@ -51,6 +52,11 @@ const LoginRoute = LoginRouteImport.update({
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
   path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiDemoRoute = ApiDemoRouteImport.update({
+  id: '/api/demo',
+  path: '/api/demo',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppIndexRoute = AppIndexRouteImport.update({
@@ -125,6 +131,7 @@ export interface FileRoutesByFullPath {
   '/care': typeof CareRouteRouteWithChildren
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
+  '/api/demo': typeof ApiDemoRoute
   '/app/admin': typeof AppAdminRoute
   '/app/calendar': typeof AppCalendarRoute
   '/app/inbox': typeof AppInboxRoute
@@ -143,6 +150,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
+  '/api/demo': typeof ApiDemoRoute
   '/app/admin': typeof AppAdminRoute
   '/app/calendar': typeof AppCalendarRoute
   '/app/inbox': typeof AppInboxRoute
@@ -164,6 +172,7 @@ export interface FileRoutesById {
   '/care': typeof CareRouteRouteWithChildren
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
+  '/api/demo': typeof ApiDemoRoute
   '/app/admin': typeof AppAdminRoute
   '/app/calendar': typeof AppCalendarRoute
   '/app/inbox': typeof AppInboxRoute
@@ -186,6 +195,7 @@ export interface FileRouteTypes {
     | '/care'
     | '/login'
     | '/signup'
+    | '/api/demo'
     | '/app/admin'
     | '/app/calendar'
     | '/app/inbox'
@@ -204,6 +214,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/signup'
+    | '/api/demo'
     | '/app/admin'
     | '/app/calendar'
     | '/app/inbox'
@@ -224,6 +235,7 @@ export interface FileRouteTypes {
     | '/care'
     | '/login'
     | '/signup'
+    | '/api/demo'
     | '/app/admin'
     | '/app/calendar'
     | '/app/inbox'
@@ -245,6 +257,7 @@ export interface RootRouteChildren {
   CareRouteRoute: typeof CareRouteRouteWithChildren
   LoginRoute: typeof LoginRoute
   SignupRoute: typeof SignupRoute
+  ApiDemoRoute: typeof ApiDemoRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
 
@@ -283,6 +296,13 @@ declare module '@tanstack/react-router' {
       path: '/signup'
       fullPath: '/signup'
       preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/demo': {
+      id: '/api/demo'
+      path: '/api/demo'
+      fullPath: '/api/demo'
+      preLoaderRoute: typeof ApiDemoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/app/': {
@@ -429,6 +449,7 @@ const rootRouteChildren: RootRouteChildren = {
   CareRouteRoute: CareRouteRouteWithChildren,
   LoginRoute: LoginRoute,
   SignupRoute: SignupRoute,
+  ApiDemoRoute: ApiDemoRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
 }
 export const routeTree = rootRouteImport

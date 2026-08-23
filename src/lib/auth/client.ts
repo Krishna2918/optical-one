@@ -238,6 +238,8 @@ export async function signOut(redirectTo = "/"): Promise<void> {
     await authClient.signOut();
   } finally {
     setBearerToken(null);
+    const { writeDemoKind } = await import("@/lib/demo-session");
+    writeDemoKind(null);
   }
   window.location.href = redirectTo;
 }

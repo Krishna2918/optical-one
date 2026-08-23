@@ -4,11 +4,19 @@ import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import { signOut } from "@/lib/auth/client";
+import { demoUserFromKind } from "@/lib/demo-session";
+import { peekDemoKind } from "@/lib/server/demo";
 
-export const Route = createFileRoute("/care")({ component: CareLayout });
+export const Route = createFileRoute("/care")({
+  loader: async () => ({ demoKind: await peekDemoKind() }),
+  component: CareLayout,
+});
 
 function CareLayout() {
-  const { user, isPending } = useCurrentUserState();
+  const { demoKind } = Route.useLoaderData();
+  const session = useCurrentUserState();
+  const user = session.user ?? (demoKind ? demoUserFromKind(demoKind) : null);
+  const isPending = user ? false : session.isPending;
   if (isPending) return <div className="min-h-svh bg-bg" />;
   if (!user) return <RedirectToSignIn />;
 

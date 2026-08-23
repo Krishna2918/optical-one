@@ -5,11 +5,19 @@ import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import { getWorkspace } from "@/lib/server/workspace";
 import type { Workspace } from "@/lib/server/workspace";
 import { AppShell } from "@/components/app-shell";
+import { demoUserFromKind } from "@/lib/demo-session";
+import { peekDemoKind } from "@/lib/server/demo";
 
-export const Route = createFileRoute("/app")({ component: AppLayout });
+export const Route = createFileRoute("/app")({
+  loader: async () => ({ demoKind: await peekDemoKind() }),
+  component: AppLayout,
+});
 
 function AppLayout() {
-  const { user, isPending } = useCurrentUserState();
+  const { demoKind } = Route.useLoaderData();
+  const session = useCurrentUserState();
+  const user = session.user ?? (demoKind ? demoUserFromKind(demoKind) : null);
+  const isPending = user ? false : session.isPending;
   const [ws, setWs] = useState<Workspace | null>(null);
   const [err, setErr] = useState<string | null>(null);
 

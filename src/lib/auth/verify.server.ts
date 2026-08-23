@@ -1,5 +1,6 @@
-import { getRequest } from "@tanstack/react-start/server";
+import { getCookie, getRequest } from "@tanstack/react-start/server";
 import { auth, authConfigured } from "./server";
+import { DEMO_COOKIE, parseDemoKind } from "@/lib/demo-session";
 
 /**
  * Server-side session resolution (server-only).
@@ -43,6 +44,14 @@ export class UnauthorizedError extends Error {
 
 export type VerifiedUser = { id: string; email: string | null };
 
+function demoKindFromRequest() {
+  try {
+    return parseDemoKind(getCookie(DEMO_COOKIE));
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Resolve the signed-in user from the current request, or `null` when auth isn't
  * configured / nobody is signed in. Safe to call from server functions and SSR
@@ -56,6 +65,13 @@ export type VerifiedUser = { id: string; email: string | null };
 export async function getSessionUser(
   bearerToken?: string,
 ): Promise<VerifiedUser | null> {
+  const kind = demoKindFromRequest();
+  if (kind) {
+    const { userIdForDemoKind } = await import("@/lib/server/demo");
+    const { demoAccount } = await import("@/lib/demo");
+    const id = await userIdForDemoKind(kind);
+    return { id, email: demoAccount(kind).email };
+  }
   if (!authConfigured) return null;
   const request = getRequest();
   if (!request) return null;
@@ -81,6 +97,11 @@ export async function getSessionUser(
  * - Auth disabled + no database -> the shared dev user id.
  */
 export async function requireUserId(bearerToken?: string): Promise<string> {
+  const kind = demoKindFromRequest();
+  if (kind) {
+    const { userIdForDemoKind } = await import("@/lib/server/demo");
+    return userIdForDemoKind(kind);
+  }
   if (!authConfigured) {
     if (databaseConfigured) {
       throw new Error(

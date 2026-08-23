@@ -9,16 +9,17 @@ import { cn } from "@/lib/utils";
 export function useDemoEntry() {
   const [busy, setBusy] = useState<DemoKind | null>(null);
 
-  async function go(kind: DemoKind) {
+  function go(kind: DemoKind) {
     if (busy) return;
     setBusy(kind);
-    try {
-      const to = await enterDemo(kind);
-      window.location.assign(to);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Could not open demo");
-      setBusy(null);
-    }
+    void enterDemo(kind)
+      .then((to) => {
+        window.location.assign(to);
+      })
+      .catch((err: unknown) => {
+        toast.error(err instanceof Error ? err.message : "Could not open demo");
+        setBusy(null);
+      });
   }
 
   return { busy, go };
@@ -65,7 +66,7 @@ export function DemoLaunch({
                   disabled={!!busy}
                   onClick={() => {
                     onPick?.(account.email, account.password);
-                    void go(account.kind);
+                    go(account.kind);
                   }}
                 >
                   {running ? "Starting…" : "Open"}
@@ -90,7 +91,13 @@ export function HeaderDemoButton({
 }) {
   const { busy, go } = useDemoEntry();
   return (
-    <Button type="button" size={size} disabled={!!busy} onClick={() => void go("owner")}>
+    <Button
+      type="button"
+      size={size}
+      data-testid="header-enter-demo"
+      disabled={!!busy}
+      onClick={() => go("owner")}
+    >
       {busy === "owner" ? "Starting…" : "Enter demo"}
       {busy === "owner" ? null : <ArrowRight className="size-4" />}
     </Button>
