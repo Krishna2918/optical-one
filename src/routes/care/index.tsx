@@ -10,10 +10,52 @@ export const Route = createFileRoute("/care/")({ component: CareHome });
 
 function CareHome() {
   const [data, setData] = useState<Awaited<ReturnType<typeof myCare>> | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [tick, setTick] = useState(0);
 
   useEffect(() => {
-    myCare().then(setData).catch(() => setData(null));
-  }, []);
+    let live = true;
+    let attempt = 0;
+    setError(null);
+
+    function load() {
+      myCare()
+        .then((d) => {
+          if (live) setData(d);
+        })
+        .catch((e: unknown) => {
+          if (!live) return;
+          attempt += 1;
+          if (attempt < 2) {
+            window.setTimeout(load, 700);
+            return;
+          }
+          setError(e instanceof Error ? e.message : "Could not open the portal");
+        });
+    }
+
+    load();
+    return () => {
+      live = false;
+    };
+  }, [tick]);
+
+  if (error && !data) {
+    return (
+      <div className="space-y-3 py-8">
+        <p className="text-sm text-muted">{error}</p>
+        <Button
+          variant="outline"
+          onClick={() => {
+            setError(null);
+            setTick((n) => n + 1);
+          }}
+        >
+          Try again
+        </Button>
+      </div>
+    );
+  }
 
   if (!data) return <div className="h-48 animate-pulse rounded-2xl bg-bg-warm" />;
 
